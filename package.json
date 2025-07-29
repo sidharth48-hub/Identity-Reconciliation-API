@@ -1,0 +1,56 @@
+{
+  "name": "identity-reconciliation-api",
+  "version": "1.0.0",
+  "description": "Customer identity tracking service",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "nodemon src/server.ts",
+    "debug": "nodemon --inspect src/server.ts",
+    "debug:break": "nodemon --inspect-brk src/server.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sidharth48-hub/Identity-Reconciliation-API.git"
+  },
+  "keywords": [
+    "identity",
+    "customer",
+    "tracking"
+  ],
+  "author": "Sidharth C P",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/sidharth48-hub/Identity-Reconciliation-API/issues"
+  },
+  "homepage": "https://github.com/sidharth48-hub/Identity-Reconciliation-API#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "joi": "^17.13.3",
+    "morgan": "^1.10.1",
+    "pg": "^8.16.3",
+    "pg-pool": "^3.10.1",
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.1.0",
+    "@types/pg": "^8.15.5",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.0.5",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
