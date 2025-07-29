@@ -89,6 +89,65 @@ export class ContactModel {
     }
 
 
+    //update a contact to secondary
+    static async updateToSecondary(contactId: number, linkedId: number): Promise<Contact>{
+        const {data, error} = await supabase
+        .from('contacts')
+        .update({
+            linked_id: linkedId,
+            link_precedence: 'secondary',
+            updated_at: new Date().toISOString
+        })
+        .eq('id', contactId)
+        .select('*')
+        .single();
+
+        if(error)
+        {
+            throw error;
+        }
+
+        return this.mapRowToContact(data);
+
+    }
+
+
+
+    //update all contacts linked to oldPrimaryid to link to newPrimaryId
+    static async updateLinkedContacts(oldPrimaryId: number, newPrimaryId: number): Promise<void> {
+
+        const {error} = await supabase
+        .from('contacts')
+        .update({
+            linked_id: newPrimaryId,
+            updated_at: new Date().toISOString
+        })
+        .eq('linked_id',oldPrimaryId);
+
+        if(error)
+        {
+            throw error;
+        }
+        
+    }
+
+
+    //Find a contact by Id
+    static async findById(id: number): Promise<Contact | null> {
+        const {data, error} = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+        if(error){
+            throw error;
+        }
+
+        return this.mapRowToContact(data);
+    }
+
+
     static async findExactMatch(email: string | null, phoneNumber:string | null) : Promise<Contact | null> {
         const {data, error} = await supabase
         .from('contacts')

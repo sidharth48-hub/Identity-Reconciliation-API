@@ -8,7 +8,8 @@ export class IdentityService{
         const safeEmail: string | null = email ?? null;
         const safePhoneNumber: string | null = phoneNumber ?? null;
 
-        // Step 1: Find existing contacts
+        try{
+            // Step 1: Find existing contacts
         const existingContacts = await ContactModel.findByEmailOrPhone(safeEmail, safePhoneNumber);
 
         if(existingContacts.length === 0){
@@ -31,14 +32,89 @@ export class IdentityService{
             return consolidated;
         }
 
+        //step 3: Analyze the existing contacts and find their primary contacts
+        const primaryContactIds = new Set<number>();
+        const contactGroups = new Map<number, Contact[]>();
 
-        const consolidated: ConsolidatedContact = {
-            primaryContactId: 0,
-            emails: [],
-            phoneNumbers: [],
-            secondaryContactIds: []
-        };
-        return consolidated;
+        for(const contact of existingContacts)
+        {
+            const primaryId = contact.linkPrecedence === 'primary'?contact.id : contact.linkedId!;
+            primaryContactIds.add(primaryId);
+            
+            if(!contactGroups.has(primaryId))
+            {
+                contactGroups.set(primaryId, []);
+            }
+        }
+
+        // Step 4: Get all contacts for each primary group
+        const allLinkedContacts = await ContactModel.findLinkedContacts(Array.from(primaryContactIds));
+      
+        // Group contacts by their primary
+        for (const contact of allLinkedContacts) {
+            const primaryId = contact.linkPrecedence === 'primary' ? contact.id : contact.linkedId!;
+            if (!contactGroups.has(primaryId)) {
+                contactGroups.set(primaryId, []);
+            }
+            contactGroups.get(primaryId)!.push(contact);
+        }
+
+        // Step 5: Determine if we need to merge groups or create new contact
+        const primaryIds = Array.from(primaryContactIds);
+      
+        if (primaryIds.length === 1) {
+            // Case 2: Single primary group exists
+            const primaryId = primaryIds[0];
+            const hasNewInfo = await this.hasNewInformation(contactGroups.get(primaryId)!, safeEmail, safePhoneNumber);
+        
+            if (hasNewInfo) {
+            // Create secondary contact with new information
+            await ContactModel.create(safeEmail, safePhoneNumber, primaryId, 'secondary');
+            }
+        
+            const consolidated = await this.getConsolidatedContact(primaryId);
+            return consolidated;
+        } else {
+            // Case 3: Multiple primary groups need to be merged
+            // Find the oldest primary contact
+            const primaryContacts = primaryIds.map(id => 
+                contactGroups.get(id)!.find(c => c.linkPrecedence === 'primary')!
+            );
+            
+            primaryContacts.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+            const oldestPrimary = primaryContacts[0];
+            const otherPrimaries = primaryContacts.slice(1);
+
+            // Convert other primaries to secondary and update their linked contacts
+            for (const primary of otherPrimaries) {
+                await ContactModel.updateToSecondary(primary.id, oldestPrimary.id);
+                await ContactModel.updateLinkedContacts(primary.id, oldestPrimary.id);
+            }
+
+            // Check if we need to create a new secondary with the request data
+            const allContacts = Array.from(contactGroups.values()).flat();
+            const hasNewInfo = await this.hasNewInformation(allContacts, safeEmail, safePhoneNumber);
+        
+            if (hasNewInfo) {
+                await ContactModel.create(safeEmail, safePhoneNumber, oldestPrimary.id, 'secondary');
+            }
+
+            const consolidated = await this.getConsolidatedContact(oldestPrimary.id);
+            return consolidated;
+        }
+        }catch (error) {
+            throw error;
+        }
+    }
+
+    private static async hasNewInformation(contacts: Contact[], email: string | null, phoneNumber: string | null): Promise<boolean> {
+        const existingEmails = new Set(contacts.map(c => c.email).filter(Boolean));
+        const existingPhones = new Set(contacts.map(c => c.phoneNumber).filter(Boolean));
+
+        const hasNewEmail = email && !existingEmails.has(email);
+        const hasNewPhone = phoneNumber && !existingPhones.has(phoneNumber);
+
+        return (hasNewEmail || hasNewPhone) ? true: false;
     }
 
 
