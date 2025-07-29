@@ -1,4 +1,4 @@
-import pool from "../database/connection";
+import supabase from "../database/connection";
 import { Contact, ContactRow } from "../types";
 
 export class ContactModel {
@@ -18,30 +18,27 @@ export class ContactModel {
 
     //Find contact by email or phone number
     static async findByEmailOrPhone(email: string | null, phoneNumber: string | null): Promise<Contact[]> {
-        const client = await pool.connect();
+        let query = supabase
+            .from('contacts')
+            .select('*')
+            .order('created_at', { ascending: true })
+            .is('deleted_at', null);
 
-        try{
-            let query = 'SELECT * FROM contacts WHERE deleted_at IS NULL AND (';
-            const params: (string | null)[] = [];
-            const conditions: string[] = [];
-
-            if(email){
-                conditions.push(`email = $${params.length + 1}`);
-                params.push(email);
-            }
-
-            if(phoneNumber){
-                conditions.push(`phone_number = $${params.length + 1}`);
-                params.push(phoneNumber);
-            }
-
-            query += conditions.join(' OR ') + ') ORDER BY created_at ASC';
-
-            const result = await client.query(query, params);
-            return result.rows.map(this.mapRowToContact);
-        }finally{
-            client.release();
+        if (email && phoneNumber) {
+            query = query.or(`email.eq.${email},phone_number.eq.${phoneNumber}`);
+        } else if (email) {
+            query = query.eq('email', email);
+        } else if (phoneNumber) {
+            query = query.eq('phone_number', phoneNumber);
         }
+
+        const { data, error } = await query;
+
+        if (error) {
+            throw error;
+        }
+
+        return (data ?? []).map(this.mapRowToContact);
     }
 
 
@@ -51,19 +48,22 @@ export class ContactModel {
         linkedId: number | null = null,
         linkPrecedence: 'primary' | 'secondary' = 'primary'
     ): Promise<Contact> {
-        const client = await pool.connect();
-        try{
-            const query = `
-            INSERT INTO contacts (email, phone_number, linked_id, link_precedence)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *
-            `;
+        const { data, error } = await supabase
+            .from('contacts')
+            .insert([
+                {
+                    email: email,
+                    phone_number: phoneNumber,
+                    linked_id: linkedId,
+                    link_precedence: linkPrecedence
+                }
+            ])
+            .select('*')
+            .single();
 
-            const result = await client.query(query, [email, phoneNumber, linkedId, linkPrecedence]);
-            return this.mapRowToContact(result.rows[0]);
+        if (error) {
+            throw error;
         }
-        finally{
-            client.release();
-        }
+        return this.mapRowToContact(data);
     }
 }

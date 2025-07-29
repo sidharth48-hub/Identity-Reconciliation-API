@@ -31,6 +31,7 @@
   },
   "homepage": "https://github.com/sidharth48-hub/Identity-Reconciliation-API#readme",
   "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
@@ -42,8 +43,10 @@
     "postgres": "^3.4.7"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^24.1.0",
     "@types/pg": "^8.15.5",
     "@types/supertest": "^6.0.3",

@@ -1,4 +1,3 @@
-import pool from "../database/connection";
 import { ContactModel } from "../models/Contact";
 import { Contact, ConsolidatedContact, IdentifyRequest } from "../types";
 
@@ -8,39 +7,27 @@ export class IdentityService{
         const safeEmail: string | null = email ?? null;
         const safePhoneNumber: string | null = phoneNumber ?? null;
 
-        //Start transaction
-        const client = await pool.connect();
-        try{
-            await client.query('BEGIN');
+        // Step 1: Find existing contacts
+        const existingContacts = await ContactModel.findByEmailOrPhone(safeEmail, safePhoneNumber);
 
-            //Step 1: Find existing contacts
-            const existingContacts = await ContactModel.findByEmailOrPhone(safeEmail, safePhoneNumber);
+        if(existingContacts.length === 0){
+            // No existing contacts - create new primary contact
+            const newContact = await ContactModel.create(safeEmail, safePhoneNumber, null, 'primary');
 
-            if(existingContacts.length === 0){
-                //No existing contacts - create new primary contact
-                const newContact = await ContactModel.create(safeEmail, safePhoneNumber, null, 'primary');
-                await client.query('COMMIT');
-
-                return {
-                    primaryContactId: newContact.id,
-                    emails: newContact.email ? [newContact.email] : [],
-                    phoneNumbers: newContact.phoneNumber ? [newContact.phoneNumber] : [],
-                    secondaryContactIds : []
-                }
+            return {
+                primaryContactId: newContact.id,
+                emails: newContact.email ? [newContact.email] : [],
+                phoneNumbers: newContact.phoneNumber ? [newContact.phoneNumber] : [],
+                secondaryContactIds : []
             }
-
-            const consolidated: ConsolidatedContact = {
-                primaryContactId: 0,
-                emails: [],
-                phoneNumbers: [],
-                secondaryContactIds: []
-            };
-            return consolidated;
-        }catch(error){
-            await client.query('ROLLBACK');
-            throw error;
-        }finally{
-            client.release();
         }
+
+        const consolidated: ConsolidatedContact = {
+            primaryContactId: 0,
+            emails: [],
+            phoneNumbers: [],
+            secondaryContactIds: []
+        };
+        return consolidated;
     }
 }
