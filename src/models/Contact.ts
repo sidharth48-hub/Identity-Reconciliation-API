@@ -41,6 +41,27 @@ export class ContactModel {
         return (data ?? []).map(this.mapRowToContact);
     }
 
+    //Find all contacts in a linked group
+    static async findLinkedContacts(contactIds: number[]): Promise<Contact[]> {
+        if (contactIds.length === 0) return [];
+        
+        // Use Supabase to fetch linked contacts
+        const { data, error } = await supabase
+        .from('contacts')
+        .select('*')
+        .or(
+            `id.in.(${contactIds.join(',')}),linked_id.in.(${contactIds.join(',')})`
+        )
+        .is('deleted_at', null)
+        .order('created_at', { ascending: true });
+
+        if (error) {
+            throw error;
+        }
+
+        return (data ?? []).map(this.mapRowToContact);
+    }   
+
 
     static async create(
         email: string | null,
@@ -64,6 +85,23 @@ export class ContactModel {
         if (error) {
             throw error;
         }
+        return this.mapRowToContact(data);
+    }
+
+
+    static async findExactMatch(email: string | null, phoneNumber:string | null) : Promise<Contact | null> {
+        const {data, error} = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('email', email)
+        .eq('phone_number', phoneNumber)
+        .single();
+
+        if(error)
+        {
+            throw error;
+        }
+
         return this.mapRowToContact(data);
     }
 }
