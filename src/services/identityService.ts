@@ -81,7 +81,9 @@ export class IdentityService{
                 contactGroups.get(id)!.find(c => c.linkPrecedence === 'primary')!
             );
             
-            primaryContacts.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+            primaryContacts.sort(
+                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
             const oldestPrimary = primaryContacts[0];
             const otherPrimaries = primaryContacts.slice(1);
 

@@ -18,7 +18,7 @@ app.use(helmet());
 //CORS configuration
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
-    ? ['https://api-domain.com']
+    ? true
     : ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true
 }));

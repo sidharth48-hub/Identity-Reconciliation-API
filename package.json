@@ -7,8 +7,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
-    "debug": "nodemon --inspect src/server.ts",
-    "debug:break": "nodemon --inspect-brk src/server.ts",
+    "dev:debug": "nodemon --inspect src/server.ts",
+    "debug": "node --inspect-brk -r ts-node/register src/server.ts",
+    "postinstall": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {

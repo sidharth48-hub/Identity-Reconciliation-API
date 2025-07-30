@@ -35,7 +35,7 @@ export class ContactModel {
         const { data, error } = await query;
 
         if (error) {
-            throw error;
+            return [];
         }
 
         return (data ?? []).map(this.mapRowToContact);
@@ -56,7 +56,7 @@ export class ContactModel {
         .order('created_at', { ascending: true });
 
         if (error) {
-            throw error;
+            return [];
         }
 
         return (data ?? []).map(this.mapRowToContact);
@@ -141,7 +141,7 @@ export class ContactModel {
         .single();
 
         if(error){
-            throw error;
+            return null;
         }
 
         return this.mapRowToContact(data);
@@ -149,18 +149,18 @@ export class ContactModel {
 
 
     static async findExactMatch(email: string | null, phoneNumber:string | null) : Promise<Contact | null> {
-        const {data, error} = await supabase
-        .from('contacts')
-        .select('*')
-        .eq('email', email)
-        .eq('phone_number', phoneNumber)
-        .single();
+        try{
+            const {data, error} = await supabase
+            .from('contacts')
+            .select('*')
+            .eq('email', email)
+            .eq('phone_number', phoneNumber)
+            .maybeSingle();
 
-        if(error)
+            return this.mapRowToContact(data);
+        }catch(error)
         {
-            throw error;
+            return null;
         }
-
-        return this.mapRowToContact(data);
     }
 }

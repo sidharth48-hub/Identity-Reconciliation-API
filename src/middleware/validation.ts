@@ -35,7 +35,7 @@ export const validateIdentifyRequest = (req:Request, res: Response, next: NextFu
     //Sanitize the data
     const sanitizedData: IdentifyRequest = {
         email: value.email ? value.email.toLowerCase().trim() : null,
-        phoneNumber: value.phoneNumber ? String(value.phoneNumber.trim()) : null
+        phoneNumber: value.phoneNumber ? String(value.phoneNumber) : null
     };
 
     //Replace empty strings with null
